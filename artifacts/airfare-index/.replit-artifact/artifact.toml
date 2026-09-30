@@ -1,0 +1,28 @@
+kind = "data-app"
+previewPath = "/"
+title = "Airfare Price Index"
+description = "An interactive prototype dashboard for India’s Airfare Price Index (APIx), with daily fare movements, city-pair comparisons, advance-purchase windows, source coverage, and methodology notes. Uses illustrative sample data until approved fare feeds are connected."
+version = "1.0.0"
+id = "artifacts/airfare-index"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18768
+
+[services.development]
+run = "pnpm --filter @workspace/airfare-index run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/airfare-index", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/airfare-index/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18768"
+BASE_PATH = "/"

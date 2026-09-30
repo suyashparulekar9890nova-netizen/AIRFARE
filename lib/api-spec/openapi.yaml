@@ -1,0 +1,690 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.2.0
+  description: Machine-to-Machine API & Real-Time Airfare Price Index for MoSPI and RBI (SIH26056 / PS13)
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: airfare
+    description: Transparent, auditable Airfare Price Index & DGCA validation data
+  - name: m2m
+    description: Machine-to-Machine REST API integrated for MoSPI CPI and RBI monetary policy systems
+  - name: scraper
+    description: Web scraping orchestrator, proxy IP pool, and anti-bot management
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /airfare/overview:
+    get:
+      operationId: getAirfareOverview
+      tags: [airfare]
+      summary: Get Airfare Price Index dashboard overview
+      responses:
+        "200":
+          description: Index snapshot, confidence intervals, Fisher Ideal / Chained Laspeyres, and daily trend
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AirfareOverview"
+  /airfare/routes:
+    get:
+      operationId: getAirfareRoutes
+      tags: [airfare]
+      summary: Get representative route-level fare indicators with weights and contributions
+      responses:
+        "200":
+          description: Route-level fares, weights, Laspeyres contribution, and anomaly flags
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AirfareRoute"
+  /airfare/lead-time:
+    get:
+      operationId: getAirfareLeadTime
+      tags: [airfare]
+      summary: Get illustrative fares by advance-purchase window
+      responses:
+        "200":
+          description: Average fares and fee decomposition for advance-purchase windows
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LeadTimeFare"
+  /airfare/dgca-validation:
+    get:
+      operationId: getDgcaValidation
+      tags: [airfare]
+      summary: 30-day back-test against DGCA average fare data
+      responses:
+        "200":
+          description: Evaluation metrics and 30-day comparative series
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DgcaValidationResponse"
+  /airfare/receipts:
+    get:
+      operationId: getFareReceipts
+      tags: [airfare]
+      summary: Systematic itemized purchase receipt breakdown
+      responses:
+        "200":
+          description: Sampled unbundled flight purchase receipts isolating base fare from statutory taxes and fees
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FareReceipt"
+  /m2m/cpi-feed:
+    get:
+      operationId: getM2mCpiFeed
+      tags: [m2m]
+      summary: Direct M2M REST API feed for MoSPI CPI transport sub-group
+      responses:
+        "200":
+          description: Statistical feed for CPI augmentation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/M2mCpiResponse"
+  /m2m/rbi-inflation-signal:
+    get:
+      operationId: getM2mRbiSignal
+      tags: [m2m]
+      summary: Direct M2M REST API for RBI monetary policy systems
+      responses:
+        "200":
+          description: Monetary policy nowcast signal and volatility index
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/M2mRbiResponse"
+  /scraper/status:
+    get:
+      operationId: getScraperStatus
+      tags: [scraper]
+      summary: Scraper status, anti-bot matrix, and regional IP pool health
+      responses:
+        "200":
+          description: Real-time scraper telemetry and IP addressing status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScraperStatusResponse"
+  /scraper/trigger:
+    post:
+      operationId: triggerScrapeRun
+      tags: [scraper]
+      summary: Trigger an on-demand multi-source scrape run
+      responses:
+        "200":
+          description: Results of the executed scrape cycle
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScrapeRunResult"
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    DataQualitySummary:
+      type: object
+      properties:
+        overallScore:
+          type: number
+        validObservationCount:
+          type: integer
+        validPercent:
+          type: number
+        imputedCount:
+          type: integer
+        imputedPercent:
+          type: number
+        staleOrDuplicateFilteredCount:
+          type: integer
+        staleOrDuplicatePercent:
+          type: number
+        lastSyncTimestamp:
+          type: string
+        collectionCadence:
+          type: string
+      required:
+        - overallScore
+        - validObservationCount
+        - validPercent
+        - imputedCount
+        - imputedPercent
+        - staleOrDuplicateFilteredCount
+        - staleOrDuplicatePercent
+        - lastSyncTimestamp
+        - collectionCadence
+    TrendPoint:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        indexValue:
+          type: number
+        baseIndexValue:
+          type: number
+        chainedLaspeyresIndex:
+          type: number
+        fisherIdealIndex:
+          type: number
+        confidenceLower:
+          type: number
+        confidenceUpper:
+          type: number
+        averageFareInr:
+          type: number
+        baseFareInr:
+          type: number
+        taxesAndFeesInr:
+          type: number
+        coveragePercent:
+          type: number
+      required:
+        - date
+        - indexValue
+        - baseIndexValue
+        - chainedLaspeyresIndex
+        - fisherIdealIndex
+        - confidenceLower
+        - confidenceUpper
+        - averageFareInr
+        - baseFareInr
+        - taxesAndFeesInr
+        - coveragePercent
+    AirfareOverview:
+      type: object
+      properties:
+        asOf:
+          type: string
+          format: date
+        indexValue:
+          type: number
+        baseIndexValue:
+          type: number
+        chainedLaspeyresIndex:
+          type: number
+        fisherIdealIndex:
+          type: number
+        confidenceLower:
+          type: number
+        confidenceUpper:
+          type: number
+        dailyChangePercent:
+          type: number
+        weeklyChangePercent:
+          type: number
+        monthlyChangePercent:
+          type: number
+        averageFareInr:
+          type: number
+        baseFareInr:
+          type: number
+        taxesAndFeesInr:
+          type: number
+        routeCount:
+          type: integer
+        quoteCount:
+          type: integer
+        dataQuality:
+          $ref: "#/components/schemas/DataQualitySummary"
+        trend:
+          type: array
+          items:
+            $ref: "#/components/schemas/TrendPoint"
+      required:
+        - asOf
+        - indexValue
+        - baseIndexValue
+        - chainedLaspeyresIndex
+        - fisherIdealIndex
+        - confidenceLower
+        - confidenceUpper
+        - dailyChangePercent
+        - weeklyChangePercent
+        - monthlyChangePercent
+        - averageFareInr
+        - baseFareInr
+        - taxesAndFeesInr
+        - routeCount
+        - quoteCount
+        - dataQuality
+        - trend
+    AirfareRoute:
+      type: object
+      properties:
+        route:
+          type: string
+        cityPair:
+          type: string
+        weight:
+          type: number
+        baseFareInr:
+          type: number
+        currentBaseFareInr:
+          type: number
+        mandatoryTaxesInr:
+          type: number
+        averageFareInr:
+          type: number
+        weeklyChangePercent:
+          type: number
+        indexValue:
+          type: number
+        contributionPoints:
+          type: number
+        quoteCount:
+          type: integer
+        dataQualityScore:
+          type: number
+        anomalyStatus:
+          type: string
+        robustZScore:
+          type: number
+      required:
+        - route
+        - cityPair
+        - weight
+        - baseFareInr
+        - currentBaseFareInr
+        - mandatoryTaxesInr
+        - averageFareInr
+        - weeklyChangePercent
+        - indexValue
+        - contributionPoints
+        - quoteCount
+        - dataQualityScore
+        - anomalyStatus
+        - robustZScore
+    LeadTimeFare:
+      type: object
+      properties:
+        leadDays:
+          type: integer
+        label:
+          type: string
+        averageFareInr:
+          type: number
+        baseFareInr:
+          type: number
+        taxesAndFeesInr:
+          type: number
+        indexValue:
+          type: number
+      required:
+        - leadDays
+        - label
+        - averageFareInr
+        - baseFareInr
+        - taxesAndFeesInr
+        - indexValue
+    DgcaValidationMetrics:
+      type: object
+      properties:
+        evaluationPeriodDays:
+          type: integer
+        meanAbsoluteErrorInr:
+          type: number
+        rootMeanSquareErrorInr:
+          type: number
+        meanAbsolutePercentageError:
+          type: number
+        pearsonCorrelation:
+          type: number
+        directionalConcordancePercent:
+          type: number
+        coverageCompletenessPercent:
+          type: number
+      required:
+        - evaluationPeriodDays
+        - meanAbsoluteErrorInr
+        - rootMeanSquareErrorInr
+        - meanAbsolutePercentageError
+        - pearsonCorrelation
+        - directionalConcordancePercent
+        - coverageCompletenessPercent
+    DgcaComparisonPoint:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        prototypeFareInr:
+          type: number
+        dgcaBenchmarkFareInr:
+          type: number
+        prototypeIndex:
+          type: number
+        dgcaBenchmarkIndex:
+          type: number
+        residualInr:
+          type: number
+        percentDeviation:
+          type: number
+      required:
+        - date
+        - prototypeFareInr
+        - dgcaBenchmarkFareInr
+        - prototypeIndex
+        - dgcaBenchmarkIndex
+        - residualInr
+        - percentDeviation
+    DgcaValidationResponse:
+      type: object
+      properties:
+        metrics:
+          $ref: "#/components/schemas/DgcaValidationMetrics"
+        series:
+          type: array
+          items:
+            $ref: "#/components/schemas/DgcaComparisonPoint"
+      required:
+        - metrics
+        - series
+    FareReceipt:
+      type: object
+      properties:
+        receiptId:
+          type: string
+        route:
+          type: string
+        cityPair:
+          type: string
+        carrier:
+          type: string
+        flightNumber:
+          type: string
+        departureDate:
+          type: string
+        observedTimestamp:
+          type: string
+        sourcePlatform:
+          type: string
+        ipRegionUsed:
+          type: string
+        baseFareInr:
+          type: number
+        fuelSurchargeYqInr:
+          type: number
+        userDevelopmentFeeUdfInr:
+          type: number
+        passengerServiceFeePsfInr:
+          type: number
+        aviationSecurityFeeAsfInr:
+          type: number
+        gstInr:
+          type: number
+        totalMandatoryPayableInr:
+          type: number
+        convenienceFeeExcludedInr:
+          type: number
+        ancillarySeatFeeExcludedInr:
+          type: number
+        ancillaryBaggageFeeExcludedInr:
+          type: number
+        cpiComplianceStatus:
+          type: string
+      required:
+        - receiptId
+        - route
+        - cityPair
+        - carrier
+        - flightNumber
+        - departureDate
+        - observedTimestamp
+        - sourcePlatform
+        - ipRegionUsed
+        - baseFareInr
+        - fuelSurchargeYqInr
+        - userDevelopmentFeeUdfInr
+        - passengerServiceFeePsfInr
+        - aviationSecurityFeeAsfInr
+        - gstInr
+        - totalMandatoryPayableInr
+        - convenienceFeeExcludedInr
+        - ancillarySeatFeeExcludedInr
+        - ancillaryBaggageFeeExcludedInr
+        - cpiComplianceStatus
+    M2mCpiResponse:
+      type: object
+      properties:
+        standard:
+          type: string
+        seriesId:
+          type: string
+        subgroupName:
+          type: string
+        asOfDate:
+          type: string
+        basePeriod:
+          type: string
+        headlinePayableIndex:
+          type: number
+        baseFareIndex:
+          type: number
+        fisherIdealIndex:
+          type: number
+        chainedLaspeyresIndex:
+          type: number
+        confidenceInterval95:
+          type: object
+          properties:
+            lower:
+              type: number
+            upper:
+              type: number
+          required: [lower, upper]
+        monthOverMonthChangePercent:
+          type: number
+        yearOverYearChangePercent:
+          type: number
+        sampleQuoteCount:
+          type: integer
+        dgcaWeightCoveragePercent:
+          type: number
+        revisionStatus:
+          type: string
+        apiSignature:
+          type: string
+      required:
+        - standard
+        - seriesId
+        - subgroupName
+        - asOfDate
+        - basePeriod
+        - headlinePayableIndex
+        - baseFareIndex
+        - fisherIdealIndex
+        - chainedLaspeyresIndex
+        - confidenceInterval95
+        - monthOverMonthChangePercent
+        - yearOverYearChangePercent
+        - sampleQuoteCount
+        - dgcaWeightCoveragePercent
+        - revisionStatus
+        - apiSignature
+    M2mRbiResponse:
+      type: object
+      properties:
+        framework:
+          type: string
+        targetInstitution:
+          type: string
+        signalTimestamp:
+          type: string
+        aviationInflationImpulse:
+          type: string
+        currentAirfareIndex:
+          type: number
+        fisherIdealIndex:
+          type: number
+        volatilityIndex30Day:
+          type: number
+        priceDispersionMetric:
+          type: number
+        nowcastContributionToHeadlineCpiBps:
+          type: number
+        monetaryPolicyImplication:
+          type: string
+        dataQualityAuditPassed:
+          type: boolean
+        modelSignoff:
+          type: string
+      required:
+        - framework
+        - targetInstitution
+        - signalTimestamp
+        - aviationInflationImpulse
+        - currentAirfareIndex
+        - fisherIdealIndex
+        - volatilityIndex30Day
+        - priceDispersionMetric
+        - nowcastContributionToHeadlineCpiBps
+        - monetaryPolicyImplication
+        - dataQualityAuditPassed
+        - modelSignoff
+    IpNode:
+      type: object
+      properties:
+        region:
+          type: string
+        city:
+          type: string
+        ipAddress:
+          type: string
+        asn:
+          type: string
+        status:
+          type: string
+        latencyMs:
+          type: integer
+        requestCountToday:
+          type: integer
+        rateLimitCap:
+          type: integer
+      required:
+        - region
+        - city
+        - ipAddress
+        - asn
+        - status
+        - latencyMs
+        - requestCountToday
+        - rateLimitCap
+    ScraperStatusResponse:
+      type: object
+      properties:
+        engineStatus:
+          type: string
+        lastRunTimestamp:
+          type: string
+        nextScheduledRun:
+          type: string
+        totalQuotesScrapedToday:
+          type: integer
+        antiBotMatrix:
+          type: object
+          properties:
+            headerRandomization:
+              type: string
+            userAgentPoolSize:
+              type: integer
+            tlsFingerprintEmulation:
+              type: string
+            requestJitterMs:
+              type: string
+            robotsTxtConformance:
+              type: string
+            sessionIsolation:
+              type: string
+          required:
+            - headerRandomization
+            - userAgentPoolSize
+            - tlsFingerprintEmulation
+            - requestJitterMs
+            - robotsTxtConformance
+            - sessionIsolation
+        regionalIpPool:
+          type: array
+          items:
+            $ref: "#/components/schemas/IpNode"
+      required:
+        - engineStatus
+        - lastRunTimestamp
+        - nextScheduledRun
+        - totalQuotesScrapedToday
+        - antiBotMatrix
+        - regionalIpPool
+    ScrapeRunResult:
+      type: object
+      properties:
+        runId:
+          type: string
+        timestamp:
+          type: string
+        durationMs:
+          type: integer
+        sourcesPolled:
+          type: array
+          items:
+            type: string
+        quotesCollected:
+          type: integer
+        validCount:
+          type: integer
+        imputedCount:
+          type: integer
+        staleFilteredCount:
+          type: integer
+        avgLatencyMs:
+          type: integer
+        ipNodesActive:
+          type: integer
+        status:
+          type: string
+        logSnippet:
+          type: array
+          items:
+            type: string
+      required:
+        - runId
+        - timestamp
+        - durationMs
+        - sourcesPolled
+        - quotesCollected
+        - validCount
+        - imputedCount
+        - staleFilteredCount
+        - avgLatencyMs
+        - ipNodesActive
+        - status
+        - logSnippet
