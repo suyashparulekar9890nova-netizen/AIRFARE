@@ -40,3 +40,8 @@ Thumbs.db
 # Cache
 .cache/
 .local/
+
+# SQLite transient journal files
+*.db-wal
+*.db-shm
+

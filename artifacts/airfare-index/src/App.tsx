@@ -40,12 +40,14 @@ import NotFound from '@/pages/not-found';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { PersonaProvider } from '@/lib/personaContext';
+import { PersonaSwitcher, PersonaBanner } from '@/components/PersonaBanner';
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000,
-      refetchOnWindowFocus: false,
+      staleTime: 5000,
+      refetchOnWindowFocus: true,
     },
   },
 });
@@ -63,17 +65,17 @@ const NAV_ITEMS = [
 ];
 
 const INTERVAL_OPTIONS = [
+  { label: 'Every 30 sec', ms: 30 * 1000 },
+  { label: 'Every 1 min', ms: 60 * 1000 },
   { label: 'Every 5 min', ms: 5 * 60 * 1000 },
-  { label: 'Every 15 min', ms: 15 * 60 * 1000 },
-  { label: 'Every 1 hour', ms: 60 * 60 * 1000 },
 ];
 
 function AppLayout() {
   const [location, setLocation] = useLocation();
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [autoRefresh, setAutoRefresh] = useState(false);
-  const [selectedIntervalMs, setSelectedIntervalMs] = useState(5 * 60 * 1000);
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [selectedIntervalMs, setSelectedIntervalMs] = useState(30 * 1000);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isSpinning, setIsSpinning] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -134,7 +136,7 @@ function AppLayout() {
 
   useEffect(() => {
     if (!autoRefresh) return;
-    const interval = window.setInterval(refreshAll, Math.max(selectedIntervalMs, 5 * 60 * 1000));
+    const interval = window.setInterval(refreshAll, Math.max(selectedIntervalMs, 5000));
     return () => window.clearInterval(interval);
   }, [autoRefresh, selectedIntervalMs]);
 
@@ -153,13 +155,11 @@ function AppLayout() {
       <aside className={`nav-drawer ${drawerOpen ? 'open' : ''}`} aria-label="Mobile Navigation">
         <div className="drawer-header">
           <div className="brand-lockup">
-            <span className="brand-symbol">
-              <span />
-              <span />
-              <span />
-            </span>
+            <div className="h-7 w-7 bg-primary text-primary-foreground flex items-center justify-center font-display font-black text-xs rounded-sm">
+              ▲
+            </div>
             <span className="brand-name">
-              AirIndex<span>·Trust</span>
+              AIRINDEX<span className="text-primary font-mono ml-0.5">·IN</span>
             </span>
           </div>
           <button
@@ -171,7 +171,7 @@ function AppLayout() {
           </button>
         </div>
 
-        <div className="nav-caption">SEPARATE PAGES</div>
+        <div className="nav-caption">SECTIONS // 01–09</div>
         <nav className="side-nav">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
@@ -188,19 +188,19 @@ function AppLayout() {
                 className={`nav-link text-left w-full flex items-center ${isActive ? 'active' : ''}`}
               >
                 <span className="nav-mark" />
-                <Icon size={16} />
-                <span className="flex-1">{item.label}</span>
-                <span className="text-[10px] font-mono opacity-50">{item.step}</span>
+                <Icon size={15} />
+                <span className="flex-1 font-heading text-xs tracking-tight">{item.label}</span>
+                <span className="step-tag text-[10px] font-mono opacity-50">{item.step}</span>
               </Link>
             );
           })}
         </nav>
 
-        <div className="mt-auto pt-6 border-t border-white/10">
-          <div className="text-xs text-muted-foreground">
-            <p className="font-semibold text-white/80">SIH26056 Pilot</p>
-            <p className="text-[11px] mt-0.5 opacity-70">
-              Auditable airfare price index for CPI augmentation.
+        <div className="mt-auto pt-6 border-t border-border">
+          <div className="text-xs text-muted-foreground font-mono">
+            <p className="font-bold text-foreground">SIH26056 PILOT</p>
+            <p className="text-[10px] mt-0.5 opacity-70">
+              Chained Laspeyres price index for CPI augmentation.
             </p>
           </div>
         </div>
@@ -211,19 +211,22 @@ function AppLayout() {
         <Link
           href="/"
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="brand-lockup cursor-pointer"
+          className="flex items-center gap-2.5 cursor-pointer text-inherit no-underline"
         >
-          <span className="brand-symbol">
-            <span />
-            <span />
-            <span />
-          </span>
-          <span className="brand-name">
-            AirIndex<span>·Trust</span>
-          </span>
+          <div className="h-8 w-8 bg-primary text-primary-foreground flex items-center justify-center font-display font-black text-sm rounded-sm shadow-xs">
+            ▲
+          </div>
+          <div className="flex flex-col">
+            <span className="font-display font-black tracking-tight text-lg text-sidebar-foreground leading-none">
+              AIRINDEX<span className="text-primary font-mono ml-0.5">·IN</span>
+            </span>
+            <span className="text-[9px] font-mono tracking-widest text-sidebar-foreground/50 uppercase mt-1">
+              SOVEREIGN RADAR // 26056
+            </span>
+          </div>
         </Link>
         <div className="sidebar-rule" />
-        <div className="nav-caption">NAVIGATION</div>
+        <div className="nav-caption">CONTROL DECK</div>
         <nav className="side-nav" aria-label="Dashboard sections">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
@@ -240,9 +243,9 @@ function AppLayout() {
                 className={`nav-link text-left w-full flex items-center ${isActive ? 'active' : ''}`}
               >
                 <span className="nav-mark" />
-                <Icon size={16} />
-                <span className="flex-1">{item.label}</span>
-                <span className="text-[10px] font-mono opacity-50">{item.step}</span>
+                <Icon size={15} />
+                <span className="flex-1 font-heading text-xs tracking-tight">{item.label}</span>
+                <span className="step-tag text-[10px] font-mono opacity-50">{item.step}</span>
               </Link>
             );
           })}
@@ -280,10 +283,12 @@ function AppLayout() {
             </div>
           </div>
 
-          <div className="topbar-meta">
+          <div className="topbar-meta flex items-center gap-3">
+            <PersonaSwitcher />
+
             <Link
               href="/methodology"
-              className="env-pill hover:opacity-90 transition-opacity cursor-pointer hidden sm:flex items-center gap-1.5"
+              className="env-pill hover:opacity-90 transition-opacity cursor-pointer hidden md:flex items-center gap-1.5"
             >
               <ShieldCheck size={13} className="text-teal-500" />
               <span>Grade A+ (95.8)</span>
@@ -360,6 +365,8 @@ function AppLayout() {
         </header>
 
         <div className="content-wrap">
+          <PersonaBanner />
+
           <ErrorBoundary resetKey={location}>
             <Switch>
               <Route path="/" component={OverviewPage} />
@@ -404,8 +411,10 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <AppLayout />
-        <Toaster />
+        <PersonaProvider>
+          <AppLayout />
+          <Toaster />
+        </PersonaProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

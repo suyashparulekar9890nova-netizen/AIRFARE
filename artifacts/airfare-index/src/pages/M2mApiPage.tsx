@@ -30,6 +30,7 @@ import {
   SkeletonBlock,
 } from '@/components/common';
 import { number } from '@/lib/formatters';
+import { usePersona } from '@/lib/personaContext';
 
 const DEFAULT_CPI = {
   standard: "SDMX-ML / JSON-STAT 2.0 (MoSPI CPI Sub-Group Standard)",
@@ -70,15 +71,16 @@ const DEFAULT_RBI = {
 };
 
 export default function M2mApiPage() {
+  const { persona } = usePersona();
   const cpiQuery = useGetM2mCpiFeed();
   const rbiQuery = useGetM2mRbiSignal();
 
-  const [activeTab, setActiveTab] = useState<'cpi' | 'rbi'>('cpi');
+  const [activeTab, setActiveTab] = useState<'cpi' | 'rbi'>(persona === 'rbi' ? 'rbi' : 'cpi');
   const [copiedSnippet, setCopiedSnippet] = useState<string | null>(null);
 
   // Live test runner state
   const [testEndpoint, setTestEndpoint] = useState<'/api/m2m/cpi-feed' | '/api/m2m/rbi-inflation-signal'>(
-    '/api/m2m/cpi-feed',
+    persona === 'rbi' ? '/api/m2m/rbi-inflation-signal' : '/api/m2m/cpi-feed',
   );
   const [testResponse, setTestResponse] = useState<any>(null);
   const [testLatency, setTestLatency] = useState<number | null>(null);
@@ -345,7 +347,7 @@ cat("Headline CPI Contribution (bps):", rbi_signal$nowcastContributionToHeadline
               I_L(t) = ∑ [ (P_r,t / P_r,0) × w_r,0 ]
             </div>
             <p className="text-muted-foreground leading-relaxed">
-              Standard base-year weighted formulation. Weights corridors by annual DGCA origin-destination passenger volume ($w_r = \text{Pax}_r / \sum \text{Pax}$).
+              Standard base-year weighted formulation. Weights corridors by annual DGCA origin-destination passenger volume (w_r = Pax_r / ∑ Pax).
             </p>
           </div>
 
