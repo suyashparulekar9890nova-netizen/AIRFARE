@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: airfare-sovereign-index
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: pnpm install --frozen-lockfile && pnpm run build:prod
+    startCommand: pnpm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000

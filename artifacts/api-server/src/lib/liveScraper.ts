@@ -27,10 +27,15 @@ export interface RouteScrapeSummary {
 }
 
 const BROWSER_EXECUTABLE_PATHS = [
+  process.env["CHROME_PATH"] || "",
+  process.env["PUPPETEER_EXECUTABLE_PATH"] || "",
+  "/usr/bin/google-chrome",
+  "/usr/bin/google-chrome-stable",
+  "/usr/bin/chromium",
+  "/usr/bin/chromium-browser",
   "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
   "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
   "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
-  process.env["CHROME_PATH"] || "",
 ];
 
 const USER_AGENT_POOL = [
@@ -46,7 +51,9 @@ function getBrowserPath(): string {
       return p;
     }
   }
-  return "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
+  return process.platform === "win32"
+    ? "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
+    : "/usr/bin/google-chrome";
 }
 
 function getRandomUserAgent(): string {
@@ -124,8 +131,11 @@ export async function scrapeLiveRoute(
 
     // Anti-bot stealth overrides
     await page.evaluateOnNewDocument(() => {
-      Object.defineProperty(navigator, "webdriver", { get: () => undefined });
-      (window as any).chrome = { runtime: {} };
+      const g = globalThis as any;
+      if (g.navigator) {
+        Object.defineProperty(g.navigator, "webdriver", { get: () => undefined });
+      }
+      g.chrome = { runtime: {} };
     });
 
     await page.setUserAgent(getRandomUserAgent());
@@ -139,14 +149,17 @@ export async function scrapeLiveRoute(
     await new Promise((resolve) => setTimeout(resolve, jitterMs));
 
     // Extract live text from rendered page
-    const pageText = await page.evaluate(() => document.body.innerText || "");
+    const pageText = await page.evaluate(() => {
+      const doc = (globalThis as any).document;
+      return (doc?.body?.innerText as string) || "";
+    });
 
     await browser.close();
     browser = undefined;
 
     // Parse extracted prices and airline indicators
     const rawFares: { airline: string; fare: number }[] = [];
-    const lines = pageText.split("\n").map((l) => l.trim()).filter(Boolean);
+    const lines = pageText.split("\n").map((l: string) => l.trim()).filter(Boolean);
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];

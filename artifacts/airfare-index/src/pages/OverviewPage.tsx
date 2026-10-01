@@ -238,7 +238,7 @@ export default function OverviewPage() {
 
   const overview = overviewQuery.data;
   const dgcaData = dgcaQuery.data;
-  const routes = routesQuery.data?.routes ?? [];
+  const routes = (routesQuery.data ?? []) as any[];
 
   const trend = useMemo(() => {
     const points = (overview?.trend ?? []) as TrendPoint[];
