@@ -44,7 +44,7 @@ const clientPath = clientCandidates.find((p) => fs.existsSync(p));
 if (clientPath) {
   logger.info({ clientPath }, "Serving static client assets for production deployment");
   app.use(express.static(clientPath));
-  app.get("*", (req, res, next) => {
+  app.use((req, res, next) => {
     if (req.path.startsWith("/api")) {
       return next();
     }
